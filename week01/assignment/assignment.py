@@ -177,18 +177,15 @@ def run_with_threads(tur, log, main_turtle):
     thread4 = threading.Thread(target=draw_rectangles, args=(tur,))
 
     thread1.start()
-    time.sleep(2)
-    thread2.start()
-    time.sleep(2)
-    thread3.start()
-    time.sleep(2)
-    thread4.start()
-    time.sleep(2)
-
-
     thread1.join()
+
+    thread2.start()
     thread2.join()
+
+    thread3.start()
     thread3.join()
+    
+    thread4.start()
     thread4.join()
 
     log.step_timer('All drawing commands have been created')
