@@ -54,7 +54,15 @@ call_count = 0
 
 
 # TODO Add your threaded class definition here
+def _init(self, people, planets, films, species, vehicles, starships):
+    threading.Thread._init_(self)
 
+    self.people = people
+    self.planets = planets
+    self.films = films
+    self.species = species
+    self.vehicles = vehicles
+    self.starships = starships
 
 # TODO Add any functions you need here
 

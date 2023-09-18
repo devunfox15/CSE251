@@ -67,6 +67,7 @@ class Display_Hello(threading.Thread):
     # constructor
     def __init__(self, number, message):
         # calling parent class constructor
+        #used to give access to methods and properties of # a parent or sibling class.
         super().__init__()
 
         # Create or assign any variables that you need
