@@ -1,51 +1,51 @@
-import time 
+import time
 import threading
 
-
 class ImportantStuff(threading.Thread):
-    def _init_(self, num): # self is a way of saying this instance, you can add more parameters
-       super()._init_() # must included
-       self.num = num
+    def __init__(self, num, lock):
+        super().__init__()
+        self.num:int = num
+        self.lock:threading.Lock = lock
 
     def run(self):
-        print(f'I did my important work {self.num}')
+        self.lock.acquire()
+        print(f"I did my important work {self.num}")
         time.sleep(1)
-        print(f'great sleeping {self.num}')
+        self.lock.release()
+        print(f"Great sleeping {self.num}")
 
 
 
-# def do_important_work(num:int, lock1:threading.Lock, lock2:threading.Lock):
+def do_important_work(myList, lock1:threading.Lock, lock2:threading.Lock):
+    lock1.acquire()
+    print(f"This is really important got lock 1{myList}")
+    time.sleep(1)
+    lock2.acquire()
+    myList[0] = 10
+    do_important_work(myList, lock1, lock2)
+    lock1.release()
+    lock2.release()
+    print(f"I finished my important work {myList}")
 
-#     lock1.acquire()
-#     myList[0] = 10
-#     print(f"this is really important work 1 {myList}")
-#     time.sleep(1)
-#     lock2.acquire()
-#     print(f'I finished my important work {myList}')
-#     lock1.release()
-#     lock2.release()
-    
-
-# def do_important_work2(num:int, lock1:threading.Lock, lock2:threading.Lock):
-#     lock2.acquire()
-#     print(f'this is really important got lock 2')
-#     myList[0] = 10
-#     lock1.acquire()
-#     print(f"this is really important work {myList}")
-#     time.sleep(2)
-#     print(f'I finished my important work {myList}')
-#     lock2.release()
-#     lock1.release()
-    
+def do_important_work2(myList, lock1:threading.Lock, lock2:threading.Lock):
+    lock2.acquire()
+    print(f"This is really important got lock 2{myList}")
+    time.sleep(1)
+    lock1.acquire()
+    myList[0] = 10
+    # time.sleep(2)
+    lock2.release()
+    lock1.release()
+    print(f"I finished my important work {myList}")
 
 myList = [1]
 lock1 = threading.Lock()
 lock2 = threading.Lock()
 
-
+# lock1.acquire()
 t1 = ImportantStuff(1, lock1)
-t2 = ImportantStuff(2, lock2)
-
+t2 = ImportantStuff(2, lock1)
+# t2 = threading.Thread(target=do_important_work, args=(myList, lock1, lock2))
 t1.start()
 t2.start()
 t1.join()
