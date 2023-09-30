@@ -31,7 +31,7 @@ CPU_COUNT = mp.cpu_count() + 4
 
 # TODO Your final video need to have 300 processed frames.  However, while you are 
 # testing your code, set this much lower
-FRAME_COUNT = 20
+FRAME_COUNT = 300
 
 RED   = 0
 GREEN = 1
@@ -62,12 +62,18 @@ def create_new_frame(image_file, green_file, process_file):
 
 # TODO add any functions to need here
 # 15 lines of code
-  
+def process_image(image_number):
+    image_file = rf'elephant/image{image_number:03d}.png'
+    green_file = rf'green/image{image_number:03d}.png'
+    process_file = rf'processed/image{image_number:03d}.png'
 
+    create_new_frame(image_file, green_file, process_file)
 
 if __name__ == '__main__':
     # single_file_processing(300)
     # print('cpu_count() =', cpu_count())
+    start_image = 1
+    end_image = FRAME_COUNT
 
     all_process_time = timeit.default_timer()
     log = Log(show_terminal=True)
@@ -77,17 +83,16 @@ if __name__ == '__main__':
 
     # TODO Process all frames trying 1 cpu, then 2, then 3, ... to CPU_COUNT
     #      add results to xaxis_cpus and yaxis_times
-    image_number = 1
-    for i in range(FRAME_COUNT):
-      image_file = rf'elephant/image{image_number:03d}.png'
-      green_file = rf'green/image{image_number:03d}.png'
-      process_file = rf'processed/image{image_number:03d}.png'
-
-      start_time = timeit.default_timer()
-      create_new_frame(image_file, green_file, process_file)
-      print(f'\nTime To Process all images = {timeit.default_timer() - start_time}')
-      i += i
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    for NUM_CPUS in range(1, CPU_COUNT + 1):
+    
+      with mp.Pool(NUM_CPUS) as p:
+        start_time = timeit.default_timer()
+        p.map(process_image, range(start_image, end_image +1))
+        total_time = timeit.default_timer() - start_time
+        print(f'\nTime To Process all images using {NUM_CPUS} processes = {timeit.default_timer() - start_time}')
+      xaxis_cpus.append(NUM_CPUS)
+      yaxis_times.append(total_time)
+      # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
     log.write(f'Total Time for ALL processing: {timeit.default_timer() - all_process_time}')
