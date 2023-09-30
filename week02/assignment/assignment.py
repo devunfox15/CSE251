@@ -38,48 +38,180 @@ this dictionary to make other API calls for data.
 }
 """
 
-from datetime import datetime, timedelta
+from cse251 import *
+
 import requests
 import json
 import threading
-
-# Include cse 251 common Python files
-from cse251 import *
+import time  # Import time for sleep
 
 # Const Values
-TOP_API_URL = 'http://127.0.0.1:8790'
+TOP_API_URL = r'http://127.0.0.1:8790'
 
 # Global Variables
 call_count = 0
+lock = threading.Lock()
 
+class Request_thread(threading.Thread):
+    def __init__(self, url):
+        super().__init__()
+        self.url = url
+        self.response = {}
 
-# TODO Add your threaded class definition here
-def _init(self, people, planets, films, species, vehicles, starships):
-    threading.Thread._init_(self)
+    def run(self):
+        global call_count
+        call_count += 1
+        response = requests.get(self.url)
+        if response.status_code == 200:
+            self.response = response.json()
+        else:
+            print('RESPONSE = ', response.status_code)
+# init work symatanouesly 
+#this class holds all the starwar related things and displays them
+class StarWarsObject:
+    def __init__(self, film_id):
+        self.film_id = film_id
+        self.data = {}
+        self.retrieve_data()
 
-    self.people = people
-    self.planets = planets
-    self.films = films
-    self.species = species
-    self.vehicles = vehicles
-    self.starships = starships
+    def retrieve_data(self):
+        # Retrieve film details
+        film_url = f'{TOP_API_URL}/films/{self.film_id}'
+        self.data['film'] = self.get_response(film_url)
 
-# TODO Add any functions you need here
+        # Create and start threads 
+        threads = []
+        characters_urls = self.data['film'].get('characters', [])
+        characters_responses = self.retrieve_concurrent(characters_urls)
+        self.data['characters'] = characters_responses
 
+        planets_urls = self.data['film'].get('planets', [])
+        planets_responses = self.retrieve_concurrent(planets_urls)
+        self.data['planets'] = planets_responses
+
+        starships_urls = self.data['film'].get('starships', [])
+        starships_responses = self.retrieve_concurrent(starships_urls)
+        self.data['starships'] = starships_responses
+
+        vehicles_urls = self.data['film'].get('vehicles', [])
+        vehicles_responses = self.retrieve_concurrent(vehicles_urls)
+        self.data['vehicles'] = vehicles_responses
+
+        species_urls = self.data['film'].get('species', [])
+        species_responses = self.retrieve_concurrent(species_urls)
+        self.data['species'] = species_responses
+
+    def retrieve_concurrent(self, urls):
+        responses = []
+
+        def fetch_data(url):
+            response = self.get_response(url)
+            responses.append(response)
+
+        # Create and start threads for concurrent data retrieval
+        threads = [threading.Thread(target=fetch_data, args=(url,)) for url in urls]
+        for thread in threads:
+            thread.start()
+
+        # Wait for all threads to finish
+        for thread in threads:
+            thread.join()
+
+        return responses
+
+    def get_response(self, url):
+        global call_count
+        with lock:
+            call_count += 1
+        response = requests.get(url)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print('RESPONSE = ', response.status_code)
+            return {}
+            
+def format(star_wars_object):
+    film_data = star_wars_object.data['film']
+    character_urls = film_data.get('characters', [])
+    planets_urls = film_data.get('planets', [])
+    starships_urls = film_data.get('starships', [])
+    vehicles_urls = film_data.get('vehicles', [])
+    species_urls = film_data.get('species', [])
+
+    # Get the current time
+    current_time = time.strftime("%H:%M:%S")
+    # Display character names
+    print(f"{current_time}| Characters: {len(character_urls)}")
+    character_names = [star_wars_object.data['characters'][i]['name'] for i in range(len(character_urls))]
+    character_names.sort()  # Sort the names alphabetically
+    character_names_str = ', '.join(character_names)
+    print(f"{current_time}| {character_names_str}")
+    print(f"{current_time}|")
+
+    # Display planet names
+    print(f"{current_time}| Planets: {len(planets_urls)}")
+    planet_names = [star_wars_object.data['planets'][i]['name'] for i in range(len(planets_urls))]
+    planet_names.sort()  # Sort the names alphabetically
+    planet_names_str = ', '.join(planet_names)
+    print(f"{current_time}| {planet_names_str}")
+    print(f"{current_time}|")
+    
+    # Display starship names
+    print(f"{current_time}| Starships: {len(starships_urls)}")
+    starship_names = [star_wars_object.data['starships'][i]['name'] for i in range(len(starships_urls))]
+    starship_names.sort()  # Sort the names alphabetically
+    starship_names_str = ', '.join(starship_names)
+    print(f"{current_time}| {starship_names_str}")
+    print(f"{current_time}|")
+    
+    # Display vehicle names
+    print(f"{current_time}| Vehicles: {len(vehicles_urls)}")
+    vehicle_names = [star_wars_object.data['vehicles'][i]['name'] for i in range(len(vehicles_urls))]
+    vehicle_names.sort()  # Sort the names alphabetically
+    vehicle_names_str = ', '.join(vehicle_names)
+    print(f"{current_time}| {vehicle_names_str}")
+    print(f"{current_time}|")
+    
+    # Display species names
+    print(f"{current_time}| Species: {len(species_urls)}")
+    species_names = [star_wars_object.data['species'][i]['name'] for i in range(len(species_urls))]
+    species_names.sort()  # Sort the names alphabetically
+    species_names_str = ', '.join(species_names)
+    print(f"{current_time}| {species_names_str}")
+    print(f"{current_time}|")
+    
+    # Print total time and call count
+    print(f"{current_time}| Total Time To complete = {time.time() - start_time:.8f}")
+    print(f"{current_time}| There were {call_count} calls to the server")
 
 def main():
-    log = Log(show_terminal=True)
-    log.start_timer('Starting to retrieve data from the server')
+    global start_time
+    start_time = time.time()
+    # Retrieve Top API URLs
+    top_api_request = Request_thread(TOP_API_URL)
+    top_api_request.start()
+    top_api_request.join()
+    # Retrieve details for film 6
+    film_id = 6
+    star_wars_object = StarWarsObject(film_id)
+    # Format and display results
+    film_data = star_wars_object.data['film']
+    # formats the main layout
+    print("Starting to retrieve data from the server")
+    print("-----------------------------------------")
+    print(f"Title   : {film_data.get('title', '')}")
+    print(f"Director: {film_data.get('director', '')}")
+    print(f"Producer: {film_data.get('producer', '')}")
+    print(f"Released: {film_data.get('release_date', '')}")
+    print("")
+    # Call the format_output function to display names instead of URLs
+    format(star_wars_object)
 
-    # TODO Retrieve Top API urls
-
-    # TODO Retireve Details on film 6
-
-    # TODO Display results
-
-    log.stop_timer('Total Time To complete')
-    log.write(f'There were {call_count} calls to the server')
-    
+    print(f"Total Time To complete = {time.time() - start_time:.8f}")
+    print(f"There were {call_count} calls to the server")
 
 if __name__ == "__main__":
     main()
+
+    # log.write(f'character: {len(responses ["character"])})
+    # log.write()

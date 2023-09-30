@@ -25,6 +25,8 @@ import time
 # Include cse 251 common Python files
 from cse251 import *
 
+lock = threading.Lock()
+
 words = ['BOOKMARK', 'SURNAME', 'RETHINKING', 'HEAVY', 'IRONCLAD', 'HAPPY', 
         'JOURNAL', 'APPARATUS', 'GENERATOR', 'WEASEL', 'OLIVE', 
         'LINING', 'BAGGAGE', 'SHIRT', 'CASTLE', 'PANEL', 
@@ -94,9 +96,7 @@ class Board():
                       ['D', 'C', 'D', 'V', 'A', 'Z', 'N', 'G', 'S', 'O', 'L', 'D', 'I', 'E', 'I', 'I', 'D', 'S', 'S', 'F', 'C', 'N', 'U', 'A', 'I']]
 
 
-    def highlight(self, row, col, on=True):
-        """ Turn on/off highlighting for a letter """
-        self.highlighting[row][col] = on
+
 
     def get_size(self):
         """ Return the size of the board """
@@ -122,7 +122,7 @@ class Board():
     def _word_at_this_location(self, row, col, direction, word):
         """ Helper function: is the word found on the board at (x, y) in a direction """
         dir_x, dir_y = self.directions[direction]
-        highlight_copy = copy.deepcopy(self.highlighting)
+       
         for letter in word:
             board_letter = self.get_letter(row, col)
             if board_letter == letter:
@@ -130,12 +130,16 @@ class Board():
                 row += dir_x
                 col += dir_y
             else:
-                self.highlighting = copy.deepcopy(highlight_copy)
                 return False
+        for letter in word:
+            self.highlighting(row, col)
+            r+= dir_x
+            c+= dir_y
         return True
 
     def find_word(self, word):
         """ Find a word in the board """
+        
         print(f'Finding {word}...')
         for row in range(self.size):
             for col in range(self.size):
