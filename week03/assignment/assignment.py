@@ -89,7 +89,7 @@ if __name__ == '__main__':
         start_time = timeit.default_timer()
         p.map(process_image, range(start_image, end_image +1))
         total_time = timeit.default_timer() - start_time
-        print(f'\nTime To Process all images using {NUM_CPUS} processes = {timeit.default_timer() - start_time}')
+        log.write(f'\nTime To Process all images using {NUM_CPUS} processes = {timeit.default_timer() - start_time}')
       xaxis_cpus.append(NUM_CPUS)
       yaxis_times.append(total_time)
       # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
