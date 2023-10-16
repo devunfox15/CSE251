@@ -18,6 +18,7 @@ import threading
 import multiprocessing as mp
 import random
 from os.path import exists
+import queue
 
 
 
@@ -42,8 +43,23 @@ def is_prime(n: int) -> bool:
     return True
 
 # TODO create read_thread function
+def read_thread(filename: str, q: mp.Queue):
+    with open(filename, "r") as file:
+        for line in file:
+            q.put(int(line.strip()))
+    q.put("Finish")
+    
 
 # TODO create prime_process function
+def prime_processes(q:mp.Queue, primes:list):
+    while True:
+        value = q.get()
+        if value == "Finish":
+            q.put("Finish")
+            break
+        if is_prime(value):
+            primes.append(value)
+
 
 def create_data_txt(filename):
     # only create if is doesn't exist 
@@ -52,34 +68,39 @@ def create_data_txt(filename):
             for _ in range(1000):
                 f.write(str(random.randint(10000000000, 100000000000000)) + '\n')
 
-
 def main():
-    """ Main function """
-
+    """Main function"""
     filename = 'data.txt'
     create_data_txt(filename)
-
+    q = mp.Queue()
     log = Log(show_terminal=True)
     log.start_timer()
 
-    # TODO Create shared data structures
+    # Create shared data structures
+    primes = mp.Manager().list()
 
-    # TODO create reading thread
+    # Create reading thread
+    r_thread = threading.Thread(target=read_thread, args=(filename, q))
 
-    # TODO create prime processes
+    # Create prime processes
+    prime_process = [mp.Process(target=prime_processes, args=(q, primes)) for _ in range(PRIME_PROCESS_COUNT)]
 
-    # TODO Start them all
+    # Start them all
+    r_thread.start()
+    for p in prime_process:
+        p.start()
 
-    # TODO wait for them to complete
+    # Wait for them to complete
+    r_thread.join()
+    for p in prime_process:
+        p.join()
 
     log.stop_timer(f'All primes have been found using {PRIME_PROCESS_COUNT} processes')
 
-    # display the list of primes
+    # Display the list of primes
     print(f'There are {len(primes)} found:')
     for prime in primes:
         print(prime)
 
-
 if __name__ == '__main__':
     main()
-
