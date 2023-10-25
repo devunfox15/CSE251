@@ -23,7 +23,7 @@ import filecmp
 # Include cse 251 common Python files
 from cse251 import *
 
-def sender():
+def sender(parent_conn,item_count, filename1):
     """ function to send messages to other end of pipe """
     '''
     open the file
@@ -31,17 +31,39 @@ def sender():
     Note: you must break each line in the file into words and
           send those words through the pipe
     '''
-    pass
+    with open(filename1, 'r', encoding='utf-8') as f:
+        for line in f:
+            words = line.split(" ")
+            for i in range(len(words)-1):
+                word = words[i]
+                print(f"Sending: {word}")
+                parent_conn.send(word + " ")
+                item_count.value += 1
+            parent_conn.send(words[-1])
+            item_count.value += 1
+        parent_conn.send(None) #sentinal send none is a great value to send
+        parent_conn.close()
 
-
-def receiver():
+def receiver(child_conn, item_count, filename2):
     """ function to print the messages received from other end of pipe """
     ''' 
     open the file for writing
     receive all content through the shared pipe and write to the file
     Keep track of the number of items sent over the pipe
     '''
-    pass
+    with open(filename2, 'w', encoding='utf-8') as f:
+        recieved = 0
+        while True:  # another way while recieved > 0 and recived < items.value:
+        #while child_conn.poll(time): wait for up to five seconds for data
+            word = child_conn.recv()
+            recieved += 1
+            if word == None:
+                break
+            f.write(word)
+            f.write("")
+            
+            item_count.value += 1
+        f.flush()
 
 
 def are_files_same(filename1, filename2):
@@ -51,22 +73,25 @@ def are_files_same(filename1, filename2):
 
 def copy_file(log, filename1, filename2):
     # TODO create a pipe 
-    
+    parent_conn, child_conn = mp.Pipe()
     # TODO create variable to count items sent over the pipe
-
+    item_count = Value('i', 0)
     # TODO create processes 
-
+    p1 = mp.Process(target=sender, args=(parent_conn,item_count,filename1)) 
+    p2 = mp.Process(target=receiver, args=(child_conn, item_count, filename2)) 
     log.start_timer()
     start_time = log.get_time()
 
     # TODO start processes 
-    
+    p1.start() 
+    p2.start() 
     # TODO wait for processes to finish
-
+    p1.join() 
+    p2.join() 
     stop_time = log.get_time()
 
-    log.stop_timer(f'Total time to transfer content = {PUT YOUR VARIABLE HERE}: ')
-    log.write(f'items / second = {PUT YOUR VARIABLE HERE / (stop_time - start_time)}')
+    log.stop_timer(f'Total time to transfer content = {item_count.value}: ')
+    log.write(f'items / second = {item_count.value / (stop_time - start_time)}')
 
     if are_files_same(filename1, filename2):
         log.write(f'{filename1} - Files are the same')
@@ -78,7 +103,7 @@ if __name__ == "__main__":
 
     log = Log(show_terminal=True)
 
-    copy_file(log, 'gettysburg.txt', 'gettysburg-copy.txt')
+    copy_file(log, r'C:\Users\19362\CSE251\CSE251\week06\team\gettysburg.txt', 'gettysburg-copy.txt')
     
     # After you get the gettysburg.txt file working, uncomment this statement
-    # copy_file(log, 'bom.txt', 'bom-copy.txt')
+    copy_file(log, r'CSE251\week06\team\bom.txt', 'bom-copy.txt')
