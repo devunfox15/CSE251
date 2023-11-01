@@ -2,7 +2,7 @@
 Course: CSE 251
 Lesson Week: 07
 File: assingnment.py
-Author: <Your name here>
+Author: <Devun Durst>
 Purpose: Process Task Files
 
 Instructions:  See I-Learn
@@ -11,6 +11,10 @@ TODO
 
 Add your comments here on the pool sizes that you used for your assignment and
 why they were the best choices.
+
+After Careful consideration I uses 10 pools because overall on my pc 
+it had the fastest speed of completeing all of the 4034 task
+then any other amounts of pools on my computer. 
 
 
 """
@@ -62,7 +66,12 @@ def task_prime(value):
             - or -
         {value} is not prime
     """
-    pass
+    global result_primes
+    result = is_prime(value)
+    if result == True:
+       return ( f'{value} is prime')
+    else:
+       return (f'{value} is not prime')
 
 def task_word(word):
     """
@@ -72,22 +81,36 @@ def task_word(word):
             - or -
         {word} not found *****
     """
-    pass
+    global result_words
+    found = False
+    with open('words.txt','r') as file:
+        for line in file:
+            if word in line:
+                found = True
+                break
+    if found: 
+        return(f'{word} Found')
+    else:
+        return(f'{word} not found *****')
 
-def task_upper(text):
+def task_upper(text:str):
     """
     Add the following to the global list:
         {text} ==>  uppercase version of {text}
     """
-    pass
+    global result_upper
+    uppercase = text.upper()
+    return (f'{text} ==> {uppercase}')
 
 def task_sum(start_value, end_value):
     """
     Add the following to the global list:
         sum of {start_value:,} to {end_value:,} = {total:,}
     """
-    pass
-
+    global result_sums
+    
+    total = sum(range(start_value, end_value + 1))
+    return (f'sum of {start_value:,} to {end_value:,} = {total:,}')
 def task_name(url):
     """
     use requests module
@@ -96,7 +119,16 @@ def task_name(url):
             - or -
         {url} had an error receiving the information
     """
-    pass
+    global result_names
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        
+        data = response.json()
+        name = data.get("name","Name not found")
+        return (f'{url} has name {name}')
+    else:
+        return (f'{url} had an error receiving the information')
 
 
 def main():
@@ -104,31 +136,54 @@ def main():
     log.start_timer()
 
     # TODO Create process pools
+    pool = mp.Pool(10)  # five pools
+    # pool_primes = mp.Pool(5)
+    # pool_words = mp.Pool(5)
+    # pool_upper = mp.Pool(5)
+    # pool_sums = mp.Pool(5)
+    # pool_name = mp.Pool(17)
 
-    # TODO you can change the following
-    # TODO start and wait pools
-    
+
     count = 0
     task_files = glob.glob("*.task")
     for filename in task_files:
-        # print()
-        # print(filename)
+        
         task = load_json_file(filename)
         print(task)
         count += 1
         task_type = task['task']
+       # Define callback functions for each task type
+        def callback_prime(result):
+            result_primes.append(result)
+        
+        def callback_word(result):
+            result_words.append(result)
+        
+        def callback_upper(result):
+            result_upper.append(result)
+        
+        def callback_sum(result):
+            result_sums.append(result)
+        
+        def callback_name(result):
+            result_names.append(result)
+        
         if task_type == TYPE_PRIME:
-            task_prime(task['value'])
+            pool.apply_async(task_prime, args=(task['value'],), callback=callback_prime)
         elif task_type == TYPE_WORD:
-            task_word(task['word'])
+            pool.apply_async(task_word, args=(task['word'],), callback=callback_word)
         elif task_type == TYPE_UPPER:
-            task_upper(task['text'])
+            pool.apply_async(task_upper, args=(task['text'],), callback=callback_upper)
         elif task_type == TYPE_SUM:
-            task_sum(task['start'], task['end'])
+            pool.apply_async(task_sum, args=(task['start'], task['end']), callback=callback_sum)
         elif task_type == TYPE_NAME:
-            task_name(task['url'])
-        else:
-            log.write(f'Error: unknown task type {task_type}')
+            pool.apply_async(task_name, args=(task['url'],), callback=callback_name)
+
+    # Close the pool to signal that no more tasks will be added
+    pool.close()
+
+    # Wait for all tasks to complete
+    pool.join()
 
 
 
